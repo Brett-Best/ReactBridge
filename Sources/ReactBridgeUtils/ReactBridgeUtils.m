@@ -35,36 +35,32 @@ typedef struct RCTMethodInfo {
   BOOL isSync;
 } RCTMethodInfo;
 
-static void class_performClassSelector(Class class, SEL selector) {
-  unsigned int numMethods = 0;
-  Method *methods = class_copyMethodList(object_getClass(class), &numMethods);
-  for (int i = 0; i < numMethods; i++) {
-    Method method = methods[i];
-    if (sel_isEqual(method_getName(method), selector)) {
-      IMP imp = method_getImplementation(method);
-      ((void (*)(Class, SEL))imp)(class, selector);
-      break;
-    }
-  }
-  free(methods);
-}
-
-__attribute__((constructor))
-static void load() {
-  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-    SEL selector = @selector(_registerModule);
-    int numClasses = objc_getClassList(NULL, 0);
-    Class* classes = (Class *)malloc(sizeof(Class) * numClasses);
-    numClasses = objc_getClassList(classes, numClasses);
-    for (int i = 0; i < numClasses; i++) {
-      Class class = classes[i];
-      class_performClassSelector(class, selector);
-    }
-    free(classes);
-  });
-}
-
 @implementation ReactBridgeUtils
+
++ (void)load {
+  SEL selector = @selector(_registerModule);
+  
+  int numClasses = objc_getClassList(NULL, 0);
+  Class* classes = (Class *)malloc(sizeof(Class) * numClasses);
+  numClasses = objc_getClassList(classes, numClasses);
+  
+  for (int i = 0; i < numClasses; i++) {
+    Class class = classes[i];
+    
+    unsigned int numMethods = 0;
+    Method *methods = class_copyMethodList(object_getClass(class), &numMethods);
+    for (int j = 0; j < numMethods; j++) {
+      Method method = methods[j];
+      if (sel_isEqual(method_getName(method), selector)) {
+        IMP imp = method_getImplementation(method);
+        ((void (*)(Class, SEL))imp)(class, selector);
+        continue;
+      }
+    }
+    free(methods);
+  }
+  free(classes);
+}
 
 + (const void *)methodInfo:(NSString *)jsName objcName:(NSString *)objcName isSync:(BOOL)isSync {
   RCTMethodInfo* methodInfo = malloc(sizeof(RCTMethodInfo));
