@@ -40,7 +40,7 @@ let package = Package(
     .library(name: "ReactBridge", targets: ["ReactBridge"])
   ],
   dependencies: [
-    .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "510.0.2")
+    .package(url: "https://github.com/swiftlang/swift-syntax", "509.0.0" ..< "601.0.0-prerelease")
   ],
   targets: [
     .macro(
